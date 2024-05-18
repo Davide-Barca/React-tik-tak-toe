@@ -1,74 +1,72 @@
 import { useState } from "react";
 
+const borderStyle = "5px solid #fff";
+var headingText = "Tic Tac Toe";
+var turn = false;
+var botPlayer = false;
+var turnLeft = 9;
+var winner = null;
+
 export default function Board() {
-  const borderStyle = "5px solid #fff";
-
   const [boardStatus, setBoardStatus] = useState(Array(9).fill(null));
-  const [player, setPlayer] = useState(true);
-  const [squareEmpty, setSquareEmpty] = useState(8);
-  var [restart, setRestart] = useState(false);
-  var [bot, setBot] = useState(false);
 
-  const result = checkWinner(boardStatus);
-
-  var headingText = "";
-  if (result) {
-    restart = true;
-    headingText = `WINNER: ${result}`;
-  } else {
-    headingText = `Player Turn: ${player ? "X" : "O"}`;
-  }
+  var player = turn ? "X" : "O";
 
   function handleClick(position) {
-    const newBoardStatus = boardStatus.slice();
+    var newBoardStatus = boardStatus.slice();
 
-    if (newBoardStatus[position] || checkWinner(newBoardStatus)) {
+    winner = checkWinner(newBoardStatus);
+
+    // Check if game is end
+    if (newBoardStatus[position] || winner || turnLeft == 0) {
       return;
     }
 
-    if (squareEmpty === 0) {
-      setRestart(true);
-    } else {
-      console.log(squareEmpty);
-      setSquareEmpty(squareEmpty - 1);
-    }
+    // Turn Left -1
+    turnLeft--;
 
-    const currentPlayer = player ? "X" : "O";
-    newBoardStatus[position] = currentPlayer;
+    // Change next turn
+    turn = !turn;
 
+    // Update board with player move
+    newBoardStatus[position] = player;
+
+    
+    // Check Turn Left
+    turnLeft == 0 && (headingText = `Game End`);
+
+    // Check Winner
+    winner = checkWinner(newBoardStatus);
+    winner && (headingText = `Winner: ${winner}`);
+
+    // Bot is playing ?
+    botPlayer && turnLeft != 0 && !winner
+      ? (newBoardStatus = botMove(newBoardStatus))
+      : null;
+    
+    // Check Turn Left
+    turnLeft == 0 && (headingText = `Game End`);
+
+    // Check Winner
+    winner = checkWinner(newBoardStatus);
+    winner && (headingText = `Winner: ${winner}`);
+
+    // Update UI
     setBoardStatus(newBoardStatus);
-    setPlayer(!player);
-
-    console.log("Player:", player);
-    console.log("Click:", squareEmpty);
-    if (bot && squareEmpty % 2 != 0) {
-      botTurn(newBoardStatus);
-    }
-  }
-
-  function botTurn(boardStatus) {
-    var random = null;
-    do {
-      random = Math.floor(Math.random() * boardStatus.length);
-    } while (boardStatus[random] != null);
-    console.log(random);
-    setTimeout(() => {
-      handleClick(random);
-    }, 2000);
-  }
-
-  function restartGame() {
-    const boardRestart = Array(9).fill(null);
-    setBoardStatus(boardRestart);
-    setSquareEmpty(8);
-    setRestart(false);
   }
 
   return (
     <>
       <div className="status-text">
         <h1 className="title">{headingText}</h1>
-        <button onClick={() => setBot(true)}>Play with bot</button>
+        <div className="button-container">
+          <button className="btn" onClick={() => (botPlayer = true)}>
+            Play with bot
+          </button>
+          <button className="btn" onClick={() => location.reload()}>
+            Restart
+          </button>
+        </div>
       </div>
       <div className="board">
         <div className="board-row">
@@ -139,11 +137,6 @@ export default function Board() {
           <Square value={boardStatus[8]} onClickEvent={() => handleClick(8)} />
         </div>
       </div>
-      {restart && (
-        <button className="restart-game" onClick={() => restartGame()}>
-          Restart Game
-        </button>
-      )}
     </>
   );
 }
@@ -181,4 +174,16 @@ function checkWinner(boardStatus) {
     }
   }
   return null;
+}
+
+function botMove(boardStatus) {
+  // Find free cell and return it
+  var cell = null;
+  do {
+    cell = Math.floor(Math.random() * boardStatus.length);
+  } while (boardStatus[cell] != null);
+  boardStatus[cell] = turn ? "X" : "O";
+  turn = !turn;
+  turnLeft--;
+  return boardStatus;
 }
